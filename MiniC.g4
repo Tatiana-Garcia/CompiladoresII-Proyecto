@@ -6,7 +6,7 @@ declaration   : typeSpecifier declaratorList ';' ;
 
 declaratorList: declarator (',' declarator)* ;
 
-declarator    : Identifier ('[' IntegerConst ']')*
+declarator    : Identifier ('[' IntegerConst ']')* ('=' expr)?
               | '*' declarator ;
 
 typeSpecifier : 'int' | 'char' | 'bool' | 'void' | 'string' ;
@@ -22,13 +22,19 @@ statement     : compoundStmt
 
 ifStmt        : 'if' '(' expr ')' statement ('else' statement)? ;
 whileStmt     : 'while' '(' expr ')' statement ;
-forStmt       : 'for' '(' exprStmt expr? ';' expr? ')' statement ;
+forStmt       : 'for' '(' forInit forCondition? ';' forAcum? ')' statement ;
 doWhileStmt   : 'do' statement 'while' '(' expr ')' ';' ;
 assignStmt    : lvalue '=' expr ';' ;
 returnStmt    : 'return' expr? ';' ;
 exprStmt      : expr? ';' ;
 
-expr          : logicalOrExpr ;
+forInit       : exprStmt;
+forCondition  : expr;
+forAcum       : expr;
+
+expr          : assignExpr;
+
+assignExpr    : logicalOrExpr | lvalue '=' assignExpr;
 
 logicalOrExpr : logicalAndExpr ('||' logicalAndExpr)* ;
 logicalAndExpr: equalityExpr ('&&' equalityExpr)* ;

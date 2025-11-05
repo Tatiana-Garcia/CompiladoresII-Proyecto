@@ -177,6 +177,36 @@ public interface MiniCListener extends ParseTreeListener {
 	 */
 	void exitExprStmt(MiniCParser.ExprStmtContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link MiniCParser#forInit}.
+	 * @param ctx the parse tree
+	 */
+	void enterForInit(MiniCParser.ForInitContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#forInit}.
+	 * @param ctx the parse tree
+	 */
+	void exitForInit(MiniCParser.ForInitContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniCParser#forCondition}.
+	 * @param ctx the parse tree
+	 */
+	void enterForCondition(MiniCParser.ForConditionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#forCondition}.
+	 * @param ctx the parse tree
+	 */
+	void exitForCondition(MiniCParser.ForConditionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniCParser#forAcum}.
+	 * @param ctx the parse tree
+	 */
+	void enterForAcum(MiniCParser.ForAcumContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#forAcum}.
+	 * @param ctx the parse tree
+	 */
+	void exitForAcum(MiniCParser.ForAcumContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link MiniCParser#expr}.
 	 * @param ctx the parse tree
 	 */
@@ -186,6 +216,16 @@ public interface MiniCListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExpr(MiniCParser.ExprContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniCParser#assignExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterAssignExpr(MiniCParser.AssignExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#assignExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitAssignExpr(MiniCParser.AssignExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MiniCParser#logicalOrExpr}.
 	 * @param ctx the parse tree

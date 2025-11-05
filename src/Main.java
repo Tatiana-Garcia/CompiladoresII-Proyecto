@@ -8,7 +8,7 @@ import static org.antlr.v4.runtime.CharStreams.fromFileName;
 public class Main {
     public static void main(String[] args) {
         try {
-            String source = "test.txt";
+            String source = "docSample.mc";
             CharStream cs = fromFileName(source);
             MiniCLexer Lexer = new MiniCLexer(cs);
             CommonTokenStream token = new CommonTokenStream(Lexer);

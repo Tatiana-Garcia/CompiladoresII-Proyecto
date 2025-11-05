@@ -1,10 +1,26 @@
 public class MyVisitor extends MiniCBaseVisitor<Object> {
+    int tab = 0;
+    String s = "";
+
+    public void TabStructure(String s){
+        System.out.println("\t".repeat(tab)+s);
+    }
+
     @Override public Object visitProgram(MiniCParser.ProgramContext ctx) {
-        return visitChildren(ctx);
+        System.out.println("PROGRAMA");
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
     }
 
     @Override public Object visitDeclaration(MiniCParser.DeclarationContext ctx) {
-        return visitChildren(ctx);
+        s = "Declarators ("+ctx.typeSpecifier().getText()+")";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
     }
 
     @Override public Object visitDeclaratorList(MiniCParser.DeclaratorListContext ctx) {
@@ -12,36 +28,84 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitDeclarator(MiniCParser.DeclaratorContext ctx) {
-        return visitChildren(ctx);
+        s = "("+ctx.Identifier()+")";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
     }
 
     @Override public Object visitTypeSpecifier(MiniCParser.TypeSpecifierContext ctx) {
-        return visitChildren(ctx);
+        s = "Type:"+ctx.getText();
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
     }
 
     @Override public Object visitFuncDef(MiniCParser.FuncDefContext ctx) {
-        return visitChildren(ctx); }
+        s = "Function ("+ctx.Identifier().getText()+")";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+        //return visit(ctx.compoundStmt());
+    }
 
     @Override public Object visitParams(MiniCParser.ParamsContext ctx) {
-        return visitChildren(ctx); }
+        s = "Params";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+    }
 
     @Override public Object visitParam(MiniCParser.ParamContext ctx) {
-        return visitChildren(ctx); }
+        s = "Param ("+ctx.declarator().Identifier().getText()+")";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+    }
 
     @Override public Object visitCompoundStmt(MiniCParser.CompoundStmtContext ctx) {
-        return visitChildren(ctx); }
+        s = "Body: ";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+    }
 
     @Override public Object visitStatement(MiniCParser.StatementContext ctx) {
-        return visitChildren(ctx); }
+        s = "Instrucciones: ";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+    }
 
     @Override public Object visitIfStmt(MiniCParser.IfStmtContext ctx) {
-        return visitChildren(ctx); }
+        return visitChildren(ctx);
+    }
 
     @Override public Object visitWhileStmt(MiniCParser.WhileStmtContext ctx) {
         return visitChildren(ctx); }
 
     @Override public Object visitForStmt(MiniCParser.ForStmtContext ctx) {
-        return visitChildren(ctx); }
+        s = "For Statement: ";
+        TabStructure(s);
+        tab++;
+        visitChildren(ctx);
+        tab--;
+        return null;
+    }
 
     @Override public Object visitDoWhileStmt(MiniCParser.DoWhileStmtContext ctx) {
         return visitChildren(ctx); }
@@ -53,9 +117,22 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
         return visitChildren(ctx); }
 
     @Override public Object visitExprStmt(MiniCParser.ExprStmtContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    @Override public Object visitForInit(MiniCParser.ForInitContext ctx) {
+        return visitChildren(ctx); }
+
+    @Override public Object visitForCondition(MiniCParser.ForConditionContext ctx) {
+        return visitChildren(ctx); }
+
+    @Override public Object visitForAcum(MiniCParser.ForAcumContext ctx) {
         return visitChildren(ctx); }
 
     @Override public Object visitExpr(MiniCParser.ExprContext ctx) {
+        return visitChildren(ctx); }
+
+    @Override public Object visitAssignExpr(MiniCParser.AssignExprContext ctx) {
         return visitChildren(ctx); }
 
     @Override public Object visitLogicalOrExpr(MiniCParser.LogicalOrExprContext ctx) {

@@ -112,11 +112,35 @@ public interface MiniCVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprStmt(MiniCParser.ExprStmtContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link MiniCParser#forInit}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForInit(MiniCParser.ForInitContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MiniCParser#forCondition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForCondition(MiniCParser.ForConditionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MiniCParser#forAcum}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForAcum(MiniCParser.ForAcumContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link MiniCParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExpr(MiniCParser.ExprContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MiniCParser#assignExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignExpr(MiniCParser.AssignExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MiniCParser#logicalOrExpr}.
 	 * @param ctx the parse tree
