@@ -53,7 +53,7 @@ lvalue        : Identifier ('[' expr ']')* ;
 Identifier    : [A-Za-z_] [A-Za-z0-9_]* ;
 IntegerConst  : [0-9]+ ;
 CharConst     : '\'' . '\'' ;
-StringLiteral : '"' (~["\n\r])* '"' ;
+StringLiteral : '"' (~['\n'\r])* '"' ;
 WS            : [ \t\r\n]+ -> skip ;
 LINE_COMMENT  : '//' ~[\r\n]* -> skip ;
 BLOCK_COMMENT : '/*' .*? '*/' -> skip ;
