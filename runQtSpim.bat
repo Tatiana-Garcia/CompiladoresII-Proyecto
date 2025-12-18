@@ -1,12 +1,10 @@
 @echo off
-SET QTSPIM_PATH="C:\Users\tatig\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\QtSpim\QtSpim.exe"
+SET QTSPIM_PATH=C:\Program Files (x86)\QtSpim\QtSpim.exe
 
 if "%~1"=="" (
-    echo Uso: run_mips.bat <archivo.s>
-    exit /b
+    echo Uso: runQtSpim.bat ^<archivo.s^>
+    exit /b 1
 )
 
-echo Ejecutando %1 en QtSPIM...
-
-REM Opción A: Abrir GUI cargando el archivo
-%QTSPIM_PATH% "%1"
+echo Ejecutando %1 en QtSpim...
+call "%QTSPIM_PATH%" "%~1"

@@ -12,6 +12,12 @@ public class Main {
             System.err.println("Debe usar: java Main <input.mc> [-o output.s] [-S] [-O] [--dump-ir]");
             return;
         }
+        System.out.println("\nCargando datos...\n");
+        try {
+            Thread.sleep(4000); //4s
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         String inputFile = null;
         String outputFile = "output.s";
@@ -31,8 +37,10 @@ public class Main {
             }
         }
 
+        outputFile = inputFile.substring(0, inputFile.length() - 3) +".s";
+
         if (inputFile == null) {
-            System.err.println("Error: No se especificó archivo de entrada.");
+            System.err.println("Archivo no solicitado o encontrado.");
             return;
         }
 
@@ -57,15 +65,26 @@ public class Main {
                 System.err.println("Se encontraron errores sintacticos...");
                 return;
             }
-            System.out.println("Compilacion: ✓");
+            System.out.println("-> Compilacion exitosa <-\n");
 
             //MyVisitor visitor = new MyVisitor();
             //visitor.visit(tree);
 
-            System.out.println("--- Analisis Semantico ---");
+            System.out.println("Analizando semantica...\n");
+            try {
+                Thread.sleep(4000); //4s
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             semanticVisitor semantic = new semanticVisitor();
             semantic.visit(tree);
 
+            System.out.println("Generando codigo intermedio...\n");
+            try {
+                Thread.sleep(4000); //4s
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             IR irGen = new IR();
             irGen.setSymbolTable(semantic.getSymbolTable());
             irGen.visit(tree);
@@ -73,13 +92,19 @@ public class Main {
             List<Quadruple> code = irGen.code;
 
             if (dumpIR) {
-                System.out.println("--- Codigo Intermedio ---");
+                System.out.println("-> Codigo Intermedio (IR) <-");
                 for (Quadruple q : code) {
                     System.out.println(q);
                 }
             }
             // Optimizacion
             if (optimize) {
+                System.out.println("\nOptimizando codigo intermedio...\n");
+                try {
+                    Thread.sleep(4000); //4s
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 Optimizer optimizer = new Optimizer(code);
                 code = optimizer.optimize();
                 if (dumpIR) {
@@ -90,11 +115,17 @@ public class Main {
             }
 
             if (!code.isEmpty()) {
-                System.out.println("\nGenerando codigo en MIPS ...");
+                System.out.println("\nGenerando codigo en MIPS ...\n");
+                try {
+                    Thread.sleep(4000); //4s
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
                 mipsAssembler assembler = new mipsAssembler(code, semantic.getSymbolTable());
 
                 assembler.generate(outputFile);
+
             }
 
 

@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.PrintWriter;
 import java.util.*;
 
@@ -56,7 +57,23 @@ public class mipsAssembler {
             generateTextSection();
             generateRuntime(); //stubs
             out.close();
-            System.out.println("Archivo MIPS generado: " + filename);
+            System.out.println("Archivo MIPS generado: " + filename+"\n");
+
+            File batDir = new File(
+                    "C:\\Users\\tatig\\Documents\\DocumentstoSave\\Unitec 2025\\Q4\\Compiladores II\\CompiladoresII-Proyecto"
+            );
+
+            ProcessBuilder pb = new ProcessBuilder(
+                    "cmd.exe",
+                    "/c",
+                    "runQtSpim.bat",
+                    filename
+            );
+
+            pb.directory(batDir);
+            pb.inheritIO();
+            pb.start();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
