@@ -30,27 +30,31 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitDeclarator(MiniCParser.DeclaratorContext ctx) {
+        MiniCParser.DeclaratorContext id = ctx;
         String prefix = "";
-        MiniCParser.DeclaratorContext current = ctx;
-        while (current.declarator() != null) {
+        while (id.declarator() != null) {
             prefix += "*";
-            current = current.declarator();
+            id = id.declarator();
         }
+
         String arrDim = "";
-        if (!current.IntegerConst().isEmpty()) {
-            for (TerminalNode node : current.IntegerConst()) {
-                arrDim += "[" + node.getText() + "]";//[10][5]
+        if (!id.IntegerConst().isEmpty()) {
+            for (TerminalNode node : id.IntegerConst()) {
+                arrDim += "[" + node.getText() + "]";
             }
+            arrDim = " " + arrDim;
         }
-        s = "Variable: "+prefix+current.Identifier().getText()+arrDim;//m[10][5]
+
+        s = "Var: " + prefix + id.Identifier().getText() + arrDim;
         TabStructure(s);
 
-        if (ctx.expr() != null) {
+        if (id.expr() != null) {
             tab++;
             TabStructure("Value:");
             tab++;
-            visit(ctx.expr());
-            tab-=2;
+            visit(id.expr());
+            tab--;
+            tab--;
         }
         return null;
     }
@@ -84,9 +88,20 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitParam(MiniCParser.ParamContext ctx) {
-        String name = ctx.declarator().Identifier().getText();
-        String extra = ctx.declarator().getChildCount() > 1 ? ctx.declarator().getText().substring(name.length()) : "";
-        s = "Arg: "+name+extra+ " ("+ctx.typeSpecifier().getText()+")";
+        MiniCParser.DeclaratorContext id = ctx.declarator();
+        String prefix = "";
+        while (id.declarator() != null) {
+            prefix += "*";
+            id = id.declarator();
+        }
+        String name = id.Identifier().getText();
+        String extra = "";
+        if (!id.IntegerConst().isEmpty()) {
+            for(var node : id.IntegerConst()) {
+                extra += "[" + node.getText() + "]";
+            }
+        }
+        s = "Arg: " + prefix + name + extra + " (" + ctx.typeSpecifier().getText() + ")";
         TabStructure(s);
 
         return null;

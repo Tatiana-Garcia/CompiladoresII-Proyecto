@@ -5,7 +5,7 @@ public enum TACOp {
     NOT, AND, OR,
     EQ, NEQ, LT, GT, LTE, GTE,
 
-    ASSIGN, ADDR,
+    ASSIGN, ADDR, ARG_STORE,
     ARR_LOAD, ARR_STORE,
     PTR_LOAD, PTR_STORE,
 

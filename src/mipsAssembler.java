@@ -6,6 +6,7 @@ public class mipsAssembler {
     private symbolTable symbolTable;
     private PrintWriter out;
     private Set<String> globalNames = new HashSet<>();
+    private List<String> paramQueue = new ArrayList<>();
     private int paramCount = 0;
 
     private Map<String, Integer> currentStackMap;
@@ -13,6 +14,34 @@ public class mipsAssembler {
 
     private Map<String, String> stringTable = new HashMap<>();
     private int stringCount = 0;
+
+    private boolean isRuntimeFunc(String func) {
+        return func.equals("print_int") || func.equals("print_str") ||
+                func.equals("println") || func.equals("read_int") || func.equals("read_char");
+    }
+
+    private void handleRuntimeCall(String func) {
+        if (!paramQueue.isEmpty()) {
+            load("$a0", paramQueue.get(0));
+        }
+        if (func.equals("print_int")) {
+            out.println("  li $v0, 1");
+            out.println("  syscall");
+        } else if (func.equals("print_str")) {
+            out.println("  li $v0, 4");
+            out.println("  syscall");
+        } else if (func.equals("println")) {
+            out.println("  li $v0, 11"); // Print char
+            out.println("  li $a0, 10"); // \n
+            out.println("  syscall");
+        } else if (func.equals("read_int")) {
+            out.println("  li $v0, 5");
+            out.println("  syscall");
+        } else if (func.equals("read_char")) {
+            out.println("  li $v0, 12");
+            out.println("  syscall");
+        }
+    }
 
     public mipsAssembler(List<Quadruple> irCode, symbolTable st) {
         this.irCode = irCode;
@@ -25,6 +54,7 @@ public class mipsAssembler {
             out = new PrintWriter(filename);
             generateDataSection();
             generateTextSection();
+            generateRuntime(); //stubs
             out.close();
             System.out.println("Archivo MIPS generado: " + filename);
         } catch (Exception e) {
@@ -80,8 +110,6 @@ public class mipsAssembler {
         out.println(".text");
         out.println(".globl main");
 
-        generateRuntime();
-
         for (Quadruple q : irCode) {
             out.println("# " + q.toString().replace("\n", "").trim());
             translate(q);
@@ -99,18 +127,25 @@ public class mipsAssembler {
                     resetStackFrame();
                     generatePrologue();
 
-                    if (q.result.equals("fill")) {
-                        int offX = getStackOffset("x");
-                        int offY = getStackOffset("y");
-                        out.println("  sw $a0, " + offX + "($fp)");
-                        out.println("  sw $a1, " + offY + "($fp)");
-                    }
+//                    if (q.result.equals("fill")) {
+//                        int offX = getStackOffset("x");
+//                        int offY = getStackOffset("y");
+//                        out.println("  sw $a0, " + offX + "($fp)");
+//                        out.println("  sw $a1, " + offY + "($fp)");
+//                    }
                 }
+                break;
+            case ARG_STORE:
+                int argIdx = Integer.parseInt(q.arg1);
+                String varName = q.result;
+                int offsetArg = getStackOffset(varName);
+                if (argIdx < 4) out.println("  sw $a" + argIdx + ", " + offsetArg + "($fp)");
                 break;
             case ASSIGN:
                 load("$t0", q.arg1);
                 store("$t0", q.result);
                 break;
+
             case ADD:
                 load("$t1", q.arg1);
                 load("$t2", q.arg2);
@@ -205,38 +240,49 @@ public class mipsAssembler {
                 break;
 
             case PARAM:
-                load("$t0", q.arg1);
-                if (paramCount == 0) out.println("  move $a0, $t0");
-                else if (paramCount == 1) out.println("  move $a1, $t0");
-                else if (paramCount == 2) out.println("  move $a2, $t0");
-                else if (paramCount == 3) out.println("  move $a3, $t0");
-
-                out.println("  sw $t0, 0($sp)");
-                out.println("  addiu $sp, $sp, -4");
-                paramCount++;
+                paramQueue.add(q.arg1);
                 break;
+//                load("$t0", q.arg1);
+//                if (paramCount == 0) out.println("  move $a0, $t0");
+//                else if (paramCount == 1) out.println("  move $a1, $t0");
+//                else if (paramCount == 2) out.println("  move $a2, $t0");
+//                else if (paramCount == 3) out.println("  move $a3, $t0");
+//
+//                out.println("  sw $t0, 0($sp)");
+//                out.println("  addiu $sp, $sp, -4");
+//                paramCount++;
+//                break;
 
             case CALL:
                 String func = q.arg1;
-                if (func.equals("print_int")) {
-                    out.println("  addiu $sp, $sp, 4");
-                    out.println("  lw $a0, 0($sp)");
-                    out.println("  jal _print_int");
-                } else if (func.equals("print_str")) {
-                    out.println("  addiu $sp, $sp, 4");
-                    out.println("  lw $a0, 0($sp)");
-                    out.println("  jal _print_str");
-                } else if (func.equals("println")) {
-                    out.println("  jal _println");
-                } else {
-                    out.println("  jal " + func);
-                    int numParams = Integer.parseInt(q.arg2);
-                    if (numParams > 0) {
-                        out.println("  addiu $sp, $sp, " + (numParams * 4));
+//                if (isRuntimeFunc(func)) {
+//                    handleRuntimeCall(func);
+//                }
+//                else {
+                    int numArgs = paramQueue.size();
+
+                    int stackArgsSize = Math.max(16, numArgs * 4);
+                    if (stackArgsSize % 8 != 0) stackArgsSize += 4; // Alinear a 8 bytes
+
+                    out.println("  subu $sp, $sp, " + stackArgsSize);
+
+                    for (int i = 0; i < numArgs; i++) {
+                        String argVal = paramQueue.get(i);
+                        load("$t0", argVal);
+
+                        if (i < 4) {
+                            out.println("  move $a" + i + ", $t0");
+                        } else {
+                            out.println("  sw $t0, " + (i * 4) + "($sp)");
+                        }
                     }
+
+                    out.println("  jal " + func);
+                    out.println("  addiu $sp, $sp, " + stackArgsSize);
+
                     if (q.result != null) store("$v0", q.result);
-                }
-                paramCount = 0;
+                //}
+                paramQueue.clear();
                 break;
 
             case RETURN:
@@ -248,9 +294,25 @@ public class mipsAssembler {
                 out.println("  jr $ra");
                 break;
 
+            case ADDR:
+                if (globalNames.contains(q.arg1)) {
+                    out.println("  la $t0, " + q.arg1);
+                } else {
+                    int off = getStackOffset(q.arg1);
+                    out.println("  addiu $t0, $fp, " + off);
+                }
+                store("$t0", q.result);
+                break;
+
+            case PTR_LOAD:
+                load("$t1", q.arg1);
+                out.println("  lw $t0, 0($t1)");
+                store("$t0", q.result);
+                break;
+
             case PTR_STORE:
                 load("$t0", q.arg1);
-                load("$t1", q.arg2);
+                load("$t1", q.result);
                 out.println("  sw $t0, 0($t1)");
                 break;
 
@@ -333,19 +395,39 @@ public class mipsAssembler {
     }
 
     private void generateRuntime() {
-        out.println("_print_int:");
+        out.println("print_int:");
         out.println("  li $v0, 1");
         out.println("  syscall");
         out.println("  jr $ra");
 
-        out.println("_print_str:");
+        out.println("print_bool:");
+        out.println("  li $v0, 1");
+        out.println("  syscall");
+        out.println("  jr $ra");
+
+        out.println("print_str:");
         out.println("  li $v0, 4");
         out.println("  syscall");
         out.println("  jr $ra");
 
-        out.println("_println:");
+        out.println("print_char:");
+        out.println("  li $v0, 11");
+        out.println("  syscall");
+        out.println("  jr $ra");
+
+        out.println("println:");
         out.println("  la $a0, newline");
         out.println("  li $v0, 4");
+        out.println("  syscall");
+        out.println("  jr $ra");
+
+        out.println("read_int:");
+        out.println("  li $v0, 5");
+        out.println("  syscall");
+        out.println("  jr $ra");
+
+        out.println("read_char:");
+        out.println("  li $v0, 12");
         out.println("  syscall");
         out.println("  jr $ra");
 

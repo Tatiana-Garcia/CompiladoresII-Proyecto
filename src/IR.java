@@ -8,6 +8,7 @@ public class IR extends MiniCBaseVisitor<String>{
 
     private int tempCount = 0;
     private int labelCount = 0;
+    private int currentParamIndex = 0;
 
     private Stack<String> breakStack = new Stack<>();
     private Stack<String> continueStack = new Stack<>();
@@ -93,13 +94,31 @@ public class IR extends MiniCBaseVisitor<String>{
         code.add(new Quadruple(TACOp.FUNC_BEGIN, null, null, funcName));
         code.add(new Quadruple(TACOp.LABEL, null, null, funcName));
 
+        currentParamIndex = 0;
         symbolTable.pushScope(ctx);
+        if (ctx.params() != null) {
+            for(MiniCParser.ParamContext p : ctx.params().param()) {
+                visit(p);
+            }
+        }
         visit(ctx.compoundStmt());
         symbolTable.exitScope();
 
         code.add(new Quadruple(TACOp.RETURN, null, null, null));
         code.add(new Quadruple(TACOp.FUNC_END, null, null, funcName));
 
+        return null;
+    }
+
+    @Override
+    public String visitParam(MiniCParser.ParamContext ctx) {
+        MiniCParser.DeclaratorContext id = ctx.declarator();
+        while (id.declarator() != null) id = id.declarator();
+        String name = id.Identifier().getText();
+
+        code.add(new Quadruple(TACOp.ARG_STORE, String.valueOf(currentParamIndex), null, name));
+
+        currentParamIndex++;
         return null;
     }
 

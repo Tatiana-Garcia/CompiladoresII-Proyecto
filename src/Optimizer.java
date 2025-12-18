@@ -49,20 +49,20 @@ public class Optimizer {
 
     private boolean copyPropagation() {
         boolean changed = false;
-
         Map<String, String> replacements = new HashMap<>();
 
         for (Quadruple q : code) {
-            if (q.arg1 != null && replacements.containsKey(q.arg1)) {
-                q.arg1 = replacements.get(q.arg1);
-                changed = true;
+            if (q.op != TACOp.ADDR) {
+                if (q.arg1 != null && replacements.containsKey(q.arg1)) {
+                    q.arg1 = replacements.get(q.arg1);
+                    changed = true;
+                }
             }
             if (q.arg2 != null && replacements.containsKey(q.arg2)) {
                 q.arg2 = replacements.get(q.arg2);
                 changed = true;
             }
             if (q.op == TACOp.ASSIGN) {
-                // Guardamos que 'result' ahora vale lo mismo que 'arg1'
                 replacements.put(q.result, q.arg1);
             }
             else if (q.result != null) {
