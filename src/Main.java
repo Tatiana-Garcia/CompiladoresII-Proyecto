@@ -1,13 +1,16 @@
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.*;
 import java.io.IOException;
+import java.util.List;
+
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
 
 public class Main {
     public static void main(String[] args) {
         try {
-            String source = "docSample.mc";
+            String source = "testingFile.mc";
+            //String source = "docSample.mc";
             //String source = "sample.mc";
             CharStream cs = fromFileName(source);
             MiniCLexer lexer = new MiniCLexer(cs);
@@ -37,11 +40,33 @@ public class Main {
                 System.out.println("--- Análisis Semántico ---");
                 semanticVisitor semantic = new semanticVisitor();
                 semantic.visit(tree);
+
+                System.out.println("--- Generación de Código Intermedio ---");
+
+                IR irGen = new IR();
+
+                irGen.setSymbolTable(semantic.getSymbolTable());
+                irGen.visit(tree);
+
+                for (Quadruple q : irGen.code) {
+                    System.out.println(q);
+                }
+
+                // Optimizacion
+                Optimizer optimizer = new Optimizer(irGen.code);
+                List<Quadruple> optimizedIR = optimizer.optimize();
+
+                System.out.println("--- IR Optimizado ---");
+                for (Quadruple q : optimizedIR) System.out.println(q);
+
+                if (!optimizedIR.isEmpty()) {
+                    System.out.println("--- Generando codigo en MIPS ---");
+
+                    mipsAssembler assembler = new mipsAssembler(optimizedIR, semantic.getSymbolTable());
+
+                    assembler.generate("output.s");
+                }
             }
-
-
-
-            //System.out.println(tree.toStringTree(parser));
 
         } catch(IOException e) {
             e.printStackTrace();

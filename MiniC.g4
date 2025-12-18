@@ -18,23 +18,28 @@ param         : typeSpecifier declarator ;
 compoundStmt  : '{' (declaration | statement)* '}' ;
 statement     : compoundStmt
               | ifStmt | whileStmt | forStmt | doWhileStmt
-              | assignStmt | returnStmt | exprStmt ;
+              | assignStmt | returnStmt | exprStmt
+              | breakStmt | continueStmt;
 
 ifStmt        : 'if' '(' expr ')' statement ('else' statement)? ;
 whileStmt     : 'while' '(' expr ')' statement ;
-forStmt       : 'for' '(' forInit forCondition? ';' forAcum? ')' statement ;
+forStmt       : 'for' '(' forInit? ';' forCondition? ';' forAcum? ')' statement ;
 doWhileStmt   : 'do' statement 'while' '(' expr ')' ';' ;
-assignStmt    : lvalue '=' expr ';' ;
+
+assignStmt    : unaryExpr '=' expr ';' ;//cambio lvalue -> unaryExpr ... *p =10
+
 returnStmt    : 'return' expr? ';' ;
 exprStmt      : expr? ';' ;
+breakStmt     : 'break' ';' ;
+continueStmt  : 'continue' ';' ;
 
-forInit       : exprStmt;
+forInit       : expr;// exprStmt | assignStmt ;
 forCondition  : expr;
-forAcum       : expr;
+forAcum       : expr;// | assignExpr ;
 
 expr          : assignExpr;
 
-assignExpr    : logicalOrExpr | lvalue '=' assignExpr;
+assignExpr    : logicalOrExpr | unaryExpr '=' assignExpr;//cambio lvalue -> unaryExpr ... *p =10
 
 logicalOrExpr : logicalAndExpr ('||' logicalAndExpr)* ;
 logicalAndExpr: equalityExpr ('&&' equalityExpr)* ;
@@ -52,8 +57,11 @@ lvalue        : Identifier ('[' expr ']')* ;
 // Léxico clave (incompleto)
 Identifier    : [A-Za-z_] [A-Za-z0-9_]* ;
 IntegerConst  : [0-9]+ ;
-CharConst     : '\'' . '\'' ;
-StringLiteral : '"' (~['\n'\r])* '"' ;
+
+// Literales robustos
+CharConst     : '\'' ('\\' . | ~['\\] ) '\'';
+StringLiteral : '"' ('\\' . | ~['"\\] )* '"';
+
 WS            : [ \t\r\n]+ -> skip ;
 LINE_COMMENT  : '//' ~[\r\n]* -> skip ;
 BLOCK_COMMENT : '/*' .*? '*/' -> skip ;

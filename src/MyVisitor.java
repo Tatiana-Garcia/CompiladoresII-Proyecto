@@ -17,7 +17,7 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitDeclaration(MiniCParser.DeclarationContext ctx) {
-        s = "Declarators ("+ctx.typeSpecifier().getText()+")";
+        s = "Declaration ("+ctx.typeSpecifier().getText()+")";
         TabStructure(s);
         tab++;
         visitChildren(ctx.declaratorList());
@@ -30,25 +30,27 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitDeclarator(MiniCParser.DeclaratorContext ctx) {
-
+        String prefix = "";
+        MiniCParser.DeclaratorContext current = ctx;
+        while (current.declarator() != null) {
+            prefix += "*";
+            current = current.declarator();
+        }
         String arrDim = "";
-        if (!ctx.IntegerConst().isEmpty()) {
-            for (TerminalNode node : ctx.IntegerConst()) {
+        if (!current.IntegerConst().isEmpty()) {
+            for (TerminalNode node : current.IntegerConst()) {
                 arrDim += "[" + node.getText() + "]";//[10][5]
             }
-            arrDim = " " + arrDim;
         }
-        s = "Variable: "+ctx.Identifier().getText()+arrDim;//m[10][5]
+        s = "Variable: "+prefix+current.Identifier().getText()+arrDim;//m[10][5]
         TabStructure(s);
 
         if (ctx.expr() != null) {
-            //System.out.println("expr: "+ctx.expr().getText()+", "+ctx.expr().toString());
             tab++;
             TabStructure("Value:");
             tab++;
             visit(ctx.expr());
-            tab--;
-            tab--;
+            tab-=2;
         }
         return null;
     }
@@ -75,7 +77,6 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
         tab--;
         tab--;
         return null;
-        //return visit(ctx.compoundStmt());
     }
 
     @Override public Object visitParams(MiniCParser.ParamsContext ctx) {
@@ -99,22 +100,18 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitIfStmt(MiniCParser.IfStmtContext ctx) {
-        s = "If:";
-        TabStructure(s);
+        TabStructure("If:");
         tab++;
-        s = "Condition:";
-        TabStructure(s);
+        TabStructure("Condition:");
         tab++;
         visit(ctx.expr());
         tab--;
-        s = "Then:";
-        TabStructure(s);
+        TabStructure("Then:");
         tab++;
         visit(ctx.statement(0));
         tab--;
         if (ctx.statement().size() > 1) {
-            s = "Else:";
-            TabStructure(s);
+            TabStructure("Else:");
             tab++;
             visit(ctx.statement(1));
             tab--;
@@ -124,16 +121,13 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitWhileStmt(MiniCParser.WhileStmtContext ctx) {
-        s = "While:";
-        TabStructure(s);
+        TabStructure("While:");
         tab++;
-        s = "Condition:";
-        TabStructure(s);
+        TabStructure("Condition:");
         tab++;
         visit(ctx.expr());
         tab--;
-        s = "Do:";
-        TabStructure(s);
+        TabStructure("Do:");
         tab++;
         visit(ctx.statement());
         tab-=2;
@@ -141,60 +135,48 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitForStmt(MiniCParser.ForStmtContext ctx) {
-        s = "For:";
-        TabStructure(s);
+        TabStructure("For:");
         tab++;
         if (ctx.forInit() != null) {
-            s = "Init:";
-            TabStructure(s);
-            tab++;
-            visit(ctx.forInit());
-            tab--;
+            TabStructure("Init:");
+            tab++; visit(ctx.forInit()); tab--;
         }
         if (ctx.forCondition() != null) {
-            s = "Condition:";
-            TabStructure(s);
-            tab++;
-            visit(ctx.forCondition());
-            tab--;
+            TabStructure("Condition:");
+            tab++; visit(ctx.forCondition()); tab--;
         }
         if (ctx.forAcum() != null) {
-            s = "Update:";
-            TabStructure(s);
-            tab++;
-            visit(ctx.forAcum());
-            tab--;
+            TabStructure("Step:");
+            tab++; visit(ctx.forAcum()); tab--;
         }
-        s = "Do:";
-        TabStructure(s);
-        tab++;
-        visit(ctx.statement());
+        TabStructure("Do: ");
+        tab++; visit(ctx.statement());
         tab-=2;
         return null;
     }
 
-    @Override public Object visitDoWhileStmt(MiniCParser.DoWhileStmtContext ctx) {
-        s = "Do-While:";
-        TabStructure(s);
-        tab++;
-        visit(ctx.statement());
-        s = "Condition:";
-        TabStructure(s);
-        tab++;
-        visit(ctx.expr());
-        tab--;
-        tab--;
+    @Override public Object visitBreakStmt(MiniCParser.BreakStmtContext ctx) {
+        TabStructure("break");
+        return null;
+    }
+
+    @Override public Object visitContinueStmt(MiniCParser.ContinueStmtContext ctx) {
+        TabStructure("continue");
         return null;
     }
 
     @Override public Object visitAssignStmt(MiniCParser.AssignStmtContext ctx) {
-        //System.out.println("LV:"+ctx.lvalue().getText());
-        s = "Assign (=)";
-        TabStructure(s);
+
+        TabStructure("Assign (=)");
         tab++;
-        visit(ctx.lvalue());
-        visit(ctx.expr());
+        TabStructure("Target:");
+        tab++;
+        visit(ctx.unaryExpr());
         tab--;
+        TabStructure("Value:");
+        tab++;
+        visit(ctx.expr());
+        tab-=2;
         return null;
     }
 
@@ -208,14 +190,12 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
         }
         return null;
     }
-
     @Override public Object visitExprStmt(MiniCParser.ExprStmtContext ctx) {
         if (ctx.expr() != null) {
             visit(ctx.expr());
         }
         return null;
     }
-
     @Override public Object visitForInit(MiniCParser.ForInitContext ctx) {
         return visitChildren(ctx);
     }
@@ -228,12 +208,10 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitAssignExpr(MiniCParser.AssignExprContext ctx) {
-        if (ctx.lvalue() != null) {
-            //System.out.println("LV:"+ctx.lvalue().getText());
-            s = "Assign (=): ";
-            TabStructure(s);
+        if (ctx.unaryExpr() != null) {
+            TabStructure("Assign (=): ");
             tab++;
-            visit(ctx.lvalue());
+            visit(ctx.unaryExpr());//antes lvalue
             visit(ctx.assignExpr());
             tab--;
             return null;
@@ -371,9 +349,9 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
     }
 
     @Override public Object visitUnaryExpr(MiniCParser.UnaryExprContext ctx) {
-        if (ctx.getChildCount() == 2){
+        if (ctx.getChildCount() >= 2) {
             String op = ctx.getChild(0).getText();
-            TabStructure("Unary Op: "+op);
+            TabStructure("Unary Op: " + op);
             tab++;
             visit(ctx.unaryExpr());
             tab--;
@@ -420,11 +398,8 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
             TabStructure("Array: "+s);
             tab++;
             for (MiniCParser.ExprContext e : ctx.expr()) {
-                s = "Index: ";
-                TabStructure(s);
-                tab++;
-                visit(e);
-                tab--;
+                TabStructure("Index:");
+                tab++; visit(e); tab--;
             }
             tab--;
         }else {
@@ -434,5 +409,18 @@ public class MyVisitor extends MiniCBaseVisitor<Object> {
         return null;
     }
 
+    @Override public Object visitDoWhileStmt(MiniCParser.DoWhileStmtContext ctx) {
+        s = "Do-While:";
+        TabStructure(s);
+        tab++;
+        visit(ctx.statement());
+        s = "Condition:";
+        TabStructure(s);
+        tab++;
+        visit(ctx.expr());
+        tab--;
+        tab--;
+        return null;
+    }
 
 }

@@ -8,10 +8,14 @@ int main() {
     } else {
         suma = a - b;
     }
+    print_str("suma: ");
+    print_int(suma);
 
     while (suma > 0) {
         suma = suma - 1;
     }
+    print_str("\nsuma: ");
+    print_int(suma);
 
     return suma;
 }

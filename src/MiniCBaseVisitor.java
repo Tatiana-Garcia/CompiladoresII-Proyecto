@@ -1,4 +1,4 @@
-// Generated from C:/Users/tatig/Documents/Unitec 2025/Q3/Operativos I/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
+// Generated from C:/Users/tatig/Documents/DocumentstoSave/Unitec 2025/Q4/Compiladores II/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -130,6 +130,20 @@ public class MiniCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitExprStmt(MiniCParser.ExprStmtContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitBreakStmt(MiniCParser.BreakStmtContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitContinueStmt(MiniCParser.ContinueStmtContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

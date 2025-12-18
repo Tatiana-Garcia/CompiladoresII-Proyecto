@@ -27,4 +27,7 @@ public class Scope {
     public boolean existsInCurrentScope(String name) {
         return symbols.containsKey(name);
     }
+    public java.util.Collection<Symbol> getSymbols() {
+        return symbols.values();
+    }
 }

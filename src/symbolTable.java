@@ -1,12 +1,20 @@
+import org.antlr.v4.runtime.tree.ParseTree;
+import java.util.HashMap;
+import java.util.Map;
+
 public class symbolTable {
+    private Scope rootScope;
     private Scope currentScope;
+    private Map<ParseTree, Scope> listScope = new HashMap<>();
 
     public symbolTable() {
-        currentScope = new Scope(null);
+        rootScope = new Scope(null);
+        currentScope = rootScope;
     }
-
-    public void enterScope() {
-        currentScope = new Scope(currentScope);
+    public void enterScope(ParseTree ctx) {
+        Scope newScope = new Scope(currentScope);
+        currentScope = newScope;
+        if (ctx != null) listScope.put(ctx, newScope);
     }
 
     public void exitScope() {
@@ -26,5 +34,19 @@ public class symbolTable {
 
     public Symbol lookup(String name) {
         return currentScope.resolve(name);
+    }
+
+    public void pushScope(ParseTree ctx) {
+        if (listScope.containsKey(ctx)) {
+            currentScope = listScope.get(ctx);
+        } else {
+            enterScope(ctx);
+        }
+    }
+    public boolean isGlobalScope() {
+        return currentScope.getParent() == null;
+    }
+    public Scope getGlobalScope() {
+        return rootScope;
     }
 }

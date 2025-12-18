@@ -1,4 +1,4 @@
-// Generated from C:/Users/tatig/Documents/Unitec 2025/Q3/Operativos I/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
+// Generated from C:/Users/tatig/Documents/DocumentstoSave/Unitec 2025/Q4/Compiladores II/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -176,6 +176,26 @@ public interface MiniCListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExprStmt(MiniCParser.ExprStmtContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniCParser#breakStmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterBreakStmt(MiniCParser.BreakStmtContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#breakStmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitBreakStmt(MiniCParser.BreakStmtContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MiniCParser#continueStmt}.
+	 * @param ctx the parse tree
+	 */
+	void enterContinueStmt(MiniCParser.ContinueStmtContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MiniCParser#continueStmt}.
+	 * @param ctx the parse tree
+	 */
+	void exitContinueStmt(MiniCParser.ContinueStmtContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MiniCParser#forInit}.
 	 * @param ctx the parse tree

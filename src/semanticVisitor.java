@@ -6,6 +6,13 @@ import java.util.List;
 public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
     private varType currentTypeDeclaration;
+    private varType currentFuncReturnType;
+
+    // Contadores para contexto
+    private int loopDepth = 0;
+    private int globalOffset = 0;
+    private int localOffset = 0;
+
     symbolTable symbolTable = new symbolTable();
 
     public semanticVisitor() {
@@ -17,9 +24,39 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
         printInt.addParam(varType.INT);
         symbolTable.insert(printInt);
 
+        funcSymbol printBool = new funcSymbol("print_bool", varType.VOID);
+        printBool.addParam(varType.BOOL);
+        symbolTable.insert(printBool);
+
+        symbolTable.insert(new funcSymbol("print_char", varType.VOID));
         symbolTable.insert(new funcSymbol("print", varType.VOID));
         symbolTable.insert(new funcSymbol("println", varType.VOID));
     }
+    public symbolTable getSymbolTable() {
+        return this.symbolTable;
+    }
+
+    private boolean checkCompatibility(varType expected, varType actual) {
+        if (expected == actual) return true;
+        if (expected == varType.INT && actual == varType.CHAR) return true; // Promoción
+        return false;
+    }
+
+    private int getTypeSize(varType type) {
+        return 4;//MIPS, 4bytes in stack
+    }
+
+    private boolean checkIsLValue(MiniCParser.UnaryExprContext ctx) {
+        if (ctx.primary() != null) {
+            if (ctx.primary().lvalue() != null) return true; // Es variable o array
+            if (ctx.primary().getText().startsWith("(")) return true;
+            return false; // Literales no son LValue
+        }
+        // Unario->'*' (desreferencia) genera un LValue
+        String op = ctx.getChild(0).getText();
+        return op.equals("*");
+    }
+
 
     public void error(String msg, int line, int col) {
         System.err.println("Error Semantico (" + line + ":" + col + "): " + msg);
@@ -27,7 +64,12 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
     @Override
     public varType visitProgram(MiniCParser.ProgramContext ctx) {
+        globalOffset = 0;
         visitChildren(ctx);
+        Symbol mainSym = symbolTable.lookup("main");
+        if (mainSym == null) {
+            error("Error Semántico: Falta función 'main'.", 0, 0);
+        }
         return null;
     }
 
@@ -42,50 +84,64 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
     @Override
     public varType visitDeclarator(MiniCParser.DeclaratorContext ctx) {
-        String varName = ctx.Identifier().getText();
+        MiniCParser.DeclaratorContext id = ctx;
+        boolean isPointer = false;
 
-        boolean isArray = !ctx.IntegerConst().isEmpty();
-        int totalSize = 1;
+        while (id.declarator() != null) {
+            isPointer = true; // busca *
+            id = id.declarator();
+        }
+        String varName = id.Identifier().getText();
+
+        boolean isArray = !id.IntegerConst().isEmpty();
+        int totalElements = 1;
         List<Integer> dims = new ArrayList<>();
 
         if (isArray) {
-            for (TerminalNode node : ctx.IntegerConst()) {
-                int arrDim = Integer.parseInt(node.getText());
-                if (arrDim <= 0) {
-                    error("El tamaño del arreglo '" + varName + "' debe ser mayor a 0.",
-                            ctx.start.getLine(), ctx.start.getCharPositionInLine());
-                }
-                totalSize *= arrDim;
-                dims.add(arrDim);
+            for (TerminalNode node : id.IntegerConst()) {
+                int d = Integer.parseInt(node.getText());
+                if (d <= 0) error("La dimension del arreglo debe ser > 0", ctx.start.getLine(), 0);
+                totalElements *= d;
+                dims.add(d);
             }
         }
 
+        //Pointer Logic
+        int unitSize = isPointer ? 4 : getTypeSize(currentTypeDeclaration);
+        int totalBytes = totalElements * unitSize;
+
+        boolean isGlobal = symbolTable.isGlobalScope();
+        int currentOffset;
+
+        if (isGlobal) {
+            currentOffset = globalOffset;
+            globalOffset += totalBytes;
+        } else {
+            localOffset += totalBytes;
+            // Alinear a 4 bytes
+            while(localOffset % 4 != 0) localOffset++;
+            currentOffset = localOffset;
+        }
+
         try {
-            varSymbol v = new varSymbol(varName, currentTypeDeclaration, isArray, totalSize);
+            varSymbol v = new varSymbol(varName, currentTypeDeclaration, isArray,
+                    totalBytes, currentOffset, isGlobal);
             if (isArray) {
                 v.setDimentions(dims);
             }
             symbolTable.insert(v);
-
-            if (isArray) {
-                System.out.println("Arreglo declarado: " + varName + " (Tamaño total: " + totalSize + ")");
-            } else {
-                System.out.println("Variable declarada: " + varName);
-            }
         } catch (RuntimeException e) {
-            error(e.getMessage(), ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            error(e.getMessage(), ctx.start.getLine(), 0);
         }
 
-        if (ctx.expr() != null) {
+        if (id.expr() != null) {
             if (isArray) {
-                error("No se permite inicializacion directa de arreglos en Mini-C (int a[5] = ...)",
-                        ctx.start.getLine(), ctx.start.getCharPositionInLine());
+                error("Inicializacion de arreglos no soportada",
+                        ctx.start.getLine(), 0);
             } else {
-                varType exprType = visit(ctx.expr());
-                // Lógica de promoción char -> int ....(currentTypeDeclaration == varType.INT && exprType == varType.CHAR);
-                //boolean compatible = (exprType == currentTypeDeclaration) ||
-                if (exprType != currentTypeDeclaration) {
-                    error("Tipos incompatibles en inicialización de " + varName, ctx.start.getLine(), 0);
+                varType exprType = visit(id.expr());
+                if (!checkCompatibility(currentTypeDeclaration, exprType)) {
+                    error("Tipo incompatible al inicializar " + varName, ctx.start.getLine(), 0);
                 }
             }
         }
@@ -98,48 +154,58 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
         String funcName = ctx.Identifier().getText();
         varType returnType = searchType(ctx.typeSpecifier().getText());
 
+        currentFuncReturnType = returnType;
+        localOffset = 0;
+
         funcSymbol funcSym = new funcSymbol(funcName, returnType);
 
         try {
             symbolTable.insert(funcSym);
         } catch (RuntimeException e) {
-            error("Funcion ya definida: " + funcName, ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            error("Funcion ya definida: " + funcName, ctx.start.getLine(), 0);
         }
 
-        symbolTable.enterScope();
+        symbolTable.enterScope(ctx);
 
         if (ctx.params() != null) {
             for (MiniCParser.ParamContext param : ctx.params().param()) {
-
                 varType pType = visit(param);
                 funcSym.addParam(pType);
             }
         }
 
         visit(ctx.compoundStmt());
-
+        funcSym.setStackSize(localOffset);
         symbolTable.exitScope();
-
         return null;
     }
 
     @Override
     public varType visitParam(MiniCParser.ParamContext ctx) {
         varType paramType = searchType(ctx.typeSpecifier().getText());
-        String name = ctx.declarator().Identifier().getText();
+        MiniCParser.DeclaratorContext id = ctx.declarator();
+        int size = 4;
+        int currentOffset = localOffset;
+        localOffset += size;
 
-        boolean isArray = !ctx.declarator().IntegerConst().isEmpty();
+        while (id.declarator() != null) {
+            id = id.declarator();
+        }
+
+        String name = id.Identifier().getText();
+
+        boolean isArray = !id.IntegerConst().isEmpty();
         List<Integer> dims = new ArrayList<>();
 
         if (isArray) {
-            for (TerminalNode node : ctx.declarator().IntegerConst()) {
+            for (TerminalNode node : id.IntegerConst()) {
                 int d = Integer.parseInt(node.getText());
                 dims.add(d);
             }
         }
 
         try {
-            varSymbol p = new varSymbol(name, paramType, isArray, 4);
+            varSymbol p = new varSymbol(name, paramType, isArray, size, currentOffset, false);
             if (isArray) {
                 p.setDimentions(dims);
             }
@@ -153,7 +219,7 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
     @Override
     public varType visitCompoundStmt(MiniCParser.CompoundStmtContext ctx) {
-        symbolTable.enterScope();
+        symbolTable.enterScope(ctx);
         visitChildren(ctx);
         symbolTable.exitScope();
         return null;
@@ -189,18 +255,10 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
             varType givenType = visit(givenParams.get(i));
             varType expectedType = expectedParams.get(i);
 
-            boolean compatible = (givenType == expectedType);
-
-            // Caso especial: char se puede promover a int (según PDF)
-//            if (expectedType == varType.INT && givenType == varType.CHAR) {
-//                compatible = true;
-//            }
-
-            if (!compatible) {
+            if (!checkCompatibility(expectedType, givenType)) {
                 error("Argumento " + (i+1) + " de '" + name + "' es incorrecto. Se esperaba " +
-                                expectedType + " pero se encontró " + givenType,
-                        givenParams.get(i).start.getLine(),
-                        givenParams.get(i).start.getCharPositionInLine());
+                                expectedType + " pero se encontro " + givenType,
+                        givenParams.get(i).start.getLine(),0);
             }
         }
 
@@ -208,17 +266,103 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
     }
 
     @Override
+    public varType visitWhileStmt(MiniCParser.WhileStmtContext ctx) {
+        varType cond = visit(ctx.expr());
+        if (cond != varType.BOOL && cond != varType.INT) error("Condición inválida", ctx.start.getLine(), 0);
+        loopDepth++;
+        visit(ctx.statement());
+        loopDepth--;
+        return null;
+    }
+    @Override public varType visitForStmt(MiniCParser.ForStmtContext ctx) {
+        loopDepth++;
+        visitChildren(ctx);
+        loopDepth--;
+        return null;
+    }
+
+    @Override
     public varType visitAssignStmt(MiniCParser.AssignStmtContext ctx) {
-        varType leftType = visit(ctx.lvalue());
+        if (!checkIsLValue(ctx.unaryExpr())) {
+            error("Lado izquierdo no es asignable (no es variable ni puntero)", ctx.start.getLine(), 0);
+        }
+
+        varType leftType = visit(ctx.unaryExpr());
         varType rightType = visit(ctx.expr());
 
         if (leftType != varType.ERROR && rightType != varType.ERROR) {
-            if (leftType != rightType) {
-                error("No se puede asignar " + rightType + " a una variable de tipo " + leftType,
-                        ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            if (!checkCompatibility(leftType, rightType)) {
+                error("No se puede asignar " + rightType + " a " + leftType, ctx.start.getLine(), 0);
             }
         }
         return null;
+    }
+
+    @Override
+    public varType visitBreakStmt(MiniCParser.BreakStmtContext ctx) {
+        if (loopDepth <= 0) error("Break fuera de ciclo", ctx.start.getLine(), 0);
+        return null;
+    }
+
+    @Override
+    public varType visitContinueStmt(MiniCParser.ContinueStmtContext ctx) {
+        if (loopDepth <= 0) error("Continue fuera de ciclo", ctx.start.getLine(), 0);
+        return null;
+    }
+
+    @Override
+    public varType visitRelationalExpr(MiniCParser.RelationalExprContext ctx) {
+        if (ctx.additiveExpr().size() == 1) return visit(ctx.additiveExpr(0));
+
+        // Validar: int < int (o char < int)
+        for (MiniCParser.AdditiveExprContext expr : ctx.additiveExpr()) {
+            varType t = visit(expr);
+            if (t != varType.INT && t != varType.CHAR) {
+                error("Operadores relacionales (<, >, etc) requieren INT/CHAR.", ctx.start.getLine(), 0);
+                return varType.ERROR;
+            }
+        }
+        return varType.BOOL;
+    }
+
+    @Override
+    public varType visitEqualityExpr(MiniCParser.EqualityExprContext ctx) {
+        if (ctx.relationalExpr().size() == 1) return visit(ctx.relationalExpr(0));
+
+        varType t1 = visit(ctx.relationalExpr(0));
+        for (int i = 1; i < ctx.relationalExpr().size(); i++) {
+            varType t2 = visit(ctx.relationalExpr(i));
+            if (!checkCompatibility(t1, t2) && !checkCompatibility(t2, t1)) {
+                error("Tipos incompatibles en igualdad (==, !=).", ctx.start.getLine(), 0);
+            }
+        }
+        return varType.BOOL;
+    }
+
+    @Override
+    public varType visitLogicalAndExpr(MiniCParser.LogicalAndExprContext ctx) {
+        if (ctx.equalityExpr().size() == 1) return visit(ctx.equalityExpr(0));
+
+        for (MiniCParser.EqualityExprContext expr : ctx.equalityExpr()) {
+            varType t = visit(expr);
+            if (t != varType.BOOL && t != varType.INT) { // C permite int como lógico
+                error("Operador && requiere BOOL o INT.", ctx.start.getLine(), 0);
+            }
+        }
+        return varType.BOOL;
+    }
+
+    @Override
+    public varType visitLogicalOrExpr(MiniCParser.LogicalOrExprContext ctx) {
+        if (ctx.logicalAndExpr().size() == 1) return visit(ctx.logicalAndExpr(0));
+
+        for (MiniCParser.LogicalAndExprContext expr : ctx.logicalAndExpr()) {
+            varType t = visit(expr);
+            if (t != varType.BOOL && t != varType.INT) {
+                error("Operador || requiere BOOL o INT.", ctx.start.getLine(), 0);
+            }
+        }
+        return varType.BOOL;
     }
 
     @Override
@@ -254,19 +398,22 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
             return visit(ctx.primary());
         }
 
-        // Operador: ! (Not) o - (Menos unario)
         varType type = visit(ctx.unaryExpr());
         String op = ctx.getChild(0).getText();
 
-        if (op.equals("!") && type != varType.BOOL) {
-            error("Operador '!' espera BOOL", ctx.start.getLine(), 0);
-            return varType.ERROR;
+        if (op.equals("*")) {
+            return type;
+        } else if (op.equals("&")) {
+            if (!checkIsLValue(ctx.unaryExpr())) error("& requiere variable", ctx.start.getLine(), 0);
+            return type;
+        } else if (op.equals("-")) {
+            if (type != varType.INT) error("- requiere int", ctx.start.getLine(), 0);
+            return varType.INT;
+        } else if (op.equals("!")) {
+            if (type != varType.BOOL && type != varType.INT) error("! requiere bool/int", ctx.start.getLine(), 0);
+            return varType.BOOL;
         }
-        if ((op.equals("-") || op.equals("+")) && type != varType.INT) {
-            error("Operador unario espera INT", ctx.start.getLine(), 0);
-            return varType.ERROR;
-        }
-        return type;
+        return varType.ERROR;
     }
     @Override
     public varType visitLvalue(MiniCParser.LvalueContext ctx) {
@@ -274,19 +421,17 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
         Symbol sym = symbolTable.lookup(name);
 
         if (sym == null) {
-            error("Variable no definida: " + name, ctx.start.getLine(), ctx.start.getCharPositionInLine());
+            error("Variable no definida: " + name, ctx.start.getLine(), 0);
             return varType.ERROR;
         }
         if (!(sym instanceof varSymbol)) {
-            return sym.getType();
+            error("El identificador '" + name + "' no es una variable.", ctx.start.getLine(), 0);
+            return varType.ERROR;
         }
 
         varSymbol varSym = (varSymbol) sym;
-
-
         boolean isArray = varSym.isArray();
         int dims = isArray ? varSym.getDimentions().size() : 0;
-
 
         int usedDims = ctx.expr().size();
 
@@ -314,7 +459,11 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
                     ctx.start.getLine(), ctx.start.getCharPositionInLine());
             return varType.ERROR;
         }
-        return varSym.getType();
+        if (varSym.isArray() && ctx.expr().size() != varSym.getDimentions().size()) {
+            error("Dimensiones incorrectas para " + name, ctx.start.getLine(), 0);
+        }
+
+        return sym.getType();
     }
 
     @Override
@@ -350,7 +499,6 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
             return visit(ctx.unaryExpr(0));
         }
 
-
         varType currentType = visit(ctx.unaryExpr(0));
 
         for (int i = 1; i < ctx.unaryExpr().size(); i++) {
@@ -367,14 +515,15 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
     }
 
     private varType searchType(String s) {
-        switch (s) {
-            case "int": return varType.INT;
-            case "char": return varType.CHAR;
-            case "bool": return varType.BOOL;
-            case "void": return varType.VOID;
-            case "string": return varType.STRING;
-            case "null":return varType.NULL;
-            default: return varType.ERROR;
-        }
+        return switch (s) {
+            case "int" -> varType.INT;
+            case "char" -> varType.CHAR;
+            case "bool" -> varType.BOOL;
+            case "void" -> varType.VOID;
+            case "string" -> varType.STRING;
+            case "pointer" -> varType.POINTER;
+            case "null" -> varType.NULL;
+            default -> varType.ERROR;
+        };
     }
 }

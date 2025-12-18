@@ -1,4 +1,4 @@
-// Generated from C:/Users/tatig/Documents/Unitec 2025/Q3/Operativos I/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
+// Generated from C:/Users/tatig/Documents/DocumentstoSave/Unitec 2025/Q4/Compiladores II/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -215,6 +215,30 @@ public class MiniCBaseListener implements MiniCListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExprStmt(MiniCParser.ExprStmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBreakStmt(MiniCParser.BreakStmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBreakStmt(MiniCParser.BreakStmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterContinueStmt(MiniCParser.ContinueStmtContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitContinueStmt(MiniCParser.ContinueStmtContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

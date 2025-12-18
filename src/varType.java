@@ -5,5 +5,6 @@ public enum varType {
     STRING,
     ERROR,
     VOID,
+    POINTER,
     NULL;
 }

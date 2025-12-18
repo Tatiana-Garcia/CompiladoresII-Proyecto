@@ -1,4 +1,4 @@
-// Generated from C:/Users/tatig/Documents/Unitec 2025/Q3/Operativos I/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
+// Generated from C:/Users/tatig/Documents/DocumentstoSave/Unitec 2025/Q4/Compiladores II/CompiladoresII-Proyecto/MiniC.g4 by ANTLR 4.13.2
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -111,6 +111,18 @@ public interface MiniCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprStmt(MiniCParser.ExprStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MiniCParser#breakStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBreakStmt(MiniCParser.BreakStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link MiniCParser#continueStmt}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitContinueStmt(MiniCParser.ContinueStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MiniCParser#forInit}.
 	 * @param ctx the parse tree

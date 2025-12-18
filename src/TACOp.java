@@ -1,0 +1,18 @@
+public enum TACOp {
+
+    ADD, SUB, MULT, DIV, MOD, UMINUS,
+
+    NOT, AND, OR,
+    EQ, NEQ, LT, GT, LTE, GTE,
+
+    ASSIGN, ADDR,
+    ARR_LOAD, ARR_STORE,
+    PTR_LOAD, PTR_STORE,
+
+    LABEL, GOTO,
+    IF_TRUE, IF_FALSE,
+
+    PARAM, CALL, RETURN,
+    FUNC_BEGIN, FUNC_END
+    ;
+}
