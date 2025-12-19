@@ -78,6 +78,11 @@ public class Main {
             }
             semanticVisitor semantic = new semanticVisitor();
             semantic.visit(tree);
+            if (semantic.hasErrors()) {
+                System.err.println("\nSe encontraron errores semánticos.");
+                return;
+            }
+
 
             System.out.println("Generando codigo intermedio...\n");
             try {

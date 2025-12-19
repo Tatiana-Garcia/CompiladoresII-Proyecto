@@ -5,6 +5,8 @@ import java.util.List;
 
 public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
+    private int errorCount = 0;
+
     private varType currentTypeDeclaration;
     private varType currentFuncReturnType;
 
@@ -60,6 +62,10 @@ public class semanticVisitor extends MiniCBaseVisitor<varType> {
 
     public void error(String msg, int line, int col) {
         System.err.println("Error Semantico (" + line + ":" + col + "): " + msg);
+        errorCount++;
+    }
+    public boolean hasErrors() {
+        return errorCount > 0;
     }
 
     @Override
